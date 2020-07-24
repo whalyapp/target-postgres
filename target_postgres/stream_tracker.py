@@ -2,8 +2,11 @@ from collections import deque
 import json
 import singer.statediff as statediff
 import sys
+import singer
 
 from target_postgres.exceptions import TargetError
+
+LOGGER = singer.get_logger()
 
 
 class StreamTracker:
@@ -60,7 +63,10 @@ class StreamTracker:
         self.message_counter += 1
         self.streams_added_to.add(stream)
         self.stream_add_watermarks[stream] = self.message_counter
-        self.streams[stream].add_record_message(line_data)
+        try:
+            self.streams[stream].add_record_message(line_data)
+        except Exception as e:
+            LOGGER.debug('line processing failed: {}'.format(line_data))
 
     def _write_batch_and_update_watermarks(self, stream):
         stream_buffer = self.streams[stream]
